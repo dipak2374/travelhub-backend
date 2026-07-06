@@ -1,3 +1,5 @@
+import path from 'path';
+import { pathToFileURL } from 'url';
 import connectDB from './config/db.js';
 import { configureCloudinary } from './config/cloudinary.js';
 import { configureEmail } from './config/email.js';
@@ -35,6 +37,10 @@ const startServer = async () => {
   });
 };
 
-startServer();
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { io };
+if (isMainModule) {
+  startServer();
+}
+
+export { io, startServer };
