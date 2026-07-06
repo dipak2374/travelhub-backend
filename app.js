@@ -43,7 +43,8 @@ const isAllowedOrigin = (origin) => {
   const allowedOrigins = getAllowedOrigins();
   if (allowedOrigins.includes(origin)) return true;
 
-  return /^(http|https):\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  return /^(https?:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)
+    || /^(https?:\/\/)([a-z0-9-]+\.)+(vercel\.app|vercel\.dev|now\.sh)(:\d+)?$/i.test(origin);
 };
 
 export const createApp = () => {
