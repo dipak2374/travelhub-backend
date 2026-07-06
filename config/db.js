@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://dipakchavda:your_password@cluster0.k7qg1jh.mongodb.net/?appName=Cluster0';
+  const mongoUri = process.env.MONGODB_URI;
 
-  if (!mongoUri || mongoUri.includes('your_password')) {
-    console.error('MongoDB connection string is missing or still using the placeholder password.');
+  if (!mongoUri) {
+    console.error('MongoDB connection string is missing. Set MONGODB_URI in the environment.');
     process.exit(1);
   }
 
