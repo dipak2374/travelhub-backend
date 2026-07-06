@@ -11,7 +11,7 @@ import Tour from './models/Tour.js';
 import { createApp } from './app.js';
 
 const { server, io } = createApp();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 const startServer = async () => {
   await connectDB();
@@ -31,10 +31,32 @@ const startServer = async () => {
     console.error('Error auto-approving existing listings:', err);
   }
 
-  server.listen(PORT, () => {
-    console.log(`TravelHub server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  });
+  const tryListen = (port, attempts = 0) => {
+    const maxAttempts = 10;
+
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        const nextPort = port + 1;
+        if (attempts < maxAttempts) {
+          console.error(`Port ${port} is already in use. Trying ${nextPort}...`);
+          tryListen(nextPort, attempts + 1);
+        } else {
+          console.error('No free ports available for the server.');
+          process.exit(1);
+        }
+      } else {
+        console.error('Server startup error:', err);
+        process.exit(1);
+      }
+    });
+
+    server.listen(port, () => {
+      console.log(`TravelHub server running on port ${port}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  };
+
+  tryListen(PORT);
 };
 
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

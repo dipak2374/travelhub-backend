@@ -27,19 +27,35 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const getAllowedOrigins = () => [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  process.env.CLIENT_URL,
-].filter(Boolean);
+const getAllowedOrigins = () => {
+  const configuredOrigins = [process.env.CLIENT_URL]
+    .filter(Boolean)
+    .map((origin) => origin.trim());
+
+  const localOrigins = ['http://localhost:5173', 'http://localhost:4173', 'http://127.0.0.1:5173', 'http://127.0.0.1:4173'];
+
+  return [...new Set([...configuredOrigins, ...localOrigins])];
+};
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  const allowedOrigins = getAllowedOrigins();
+  if (allowedOrigins.includes(origin)) return true;
+
+  return /^(http|https):\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+};
 
 export const createApp = () => {
   const app = express();
   const server = http.createServer(app);
   const io = new Server(server, {
     cors: {
-      origin: getAllowedOrigins(),
+      origin: (origin, callback) => {
+        callback(null, isAllowedOrigin(origin));
+      },
       methods: ['GET', 'POST'],
+      credentials: true,
     },
   });
 
@@ -48,7 +64,12 @@ export const createApp = () => {
     next();
   });
 
-  app.use(cors({ origin: getAllowedOrigins(), credentials: true }));
+  app.use(cors({
+    origin: (origin, callback) => {
+      callback(null, isAllowedOrigin(origin));
+    },
+    credentials: true,
+  }));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
