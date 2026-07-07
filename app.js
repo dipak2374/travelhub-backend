@@ -22,7 +22,9 @@ import couponRoutes from './routes/couponRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 
-dotenv.config();
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
