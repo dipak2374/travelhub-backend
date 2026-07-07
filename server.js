@@ -31,6 +31,12 @@ const startServer = async () => {
     console.error('Error auto-approving existing listings:', err);
   }
 
+  // Ensure critical environment variables are present before starting the server
+  if (!process.env.JWT_SECRET) {
+    console.error('JWT_SECRET is not configured. Set JWT_SECRET in the environment variables.');
+    process.exit(1);
+  }
+
   const tryListen = (port, attempts = 0) => {
     const maxAttempts = 10;
 
