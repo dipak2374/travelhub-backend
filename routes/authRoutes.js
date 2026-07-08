@@ -1,9 +1,10 @@
 import express from 'express';
-import { register, login, sendOTP, verifyOTP, getMe, updateProfile, getAllUsers, getUserById, createUser, updateUser, deleteUser, updateUserStatus, approvePartner } from '../controllers/authController.js';
+import { bootstrapAdmin, register, login, sendOTP, verifyOTP, getMe, updateProfile, getAllUsers, getUserById, createUser, updateUser, deleteUser, updateUserStatus, approvePartner } from '../controllers/authController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
+router.post('/bootstrap-admin', bootstrapAdmin);
 router.post('/register', register);
 router.post('/login', login);
 router.post('/otp/send', sendOTP);

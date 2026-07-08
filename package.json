@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed": "node utils/seed.js",
-    "seed:safe": "node utils/seed-safe.js"
+    "seed:safe": "node utils/seed-safe.js",
+    "safe-start": "npm run seed:safe && node server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

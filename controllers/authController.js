@@ -82,6 +82,58 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const bootstrapAdmin = async (req, res, next) => {
+  try {
+    const { secret, email, password, name, phone } = req.body;
+    const bootstrapSecret = process.env.BOOTSTRAP_ADMIN_SECRET || process.env.ADMIN_BOOTSTRAP_SECRET;
+
+    if (!bootstrapSecret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Bootstrap secret is not configured on the server.',
+      });
+    }
+
+    if (secret !== bootstrapSecret) {
+      return res.status(401).json({ success: false, message: 'Invalid bootstrap secret' });
+    }
+
+    const existingAdmin = await User.findOne({ role: 'admin' });
+    if (existingAdmin) {
+      return res.json({
+        success: true,
+        message: 'Admin user already exists',
+        adminExists: true,
+      });
+    }
+
+    const adminData = {
+      name: name || process.env.BOOTSTRAP_ADMIN_NAME || 'Admin User',
+      email: email || process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@travelhub.com',
+      password: password || process.env.BOOTSTRAP_ADMIN_PASSWORD || 'admin123',
+      phone: phone || process.env.BOOTSTRAP_ADMIN_PHONE || '+10000000000',
+      role: 'admin',
+      isVerified: true,
+      isActive: true,
+    };
+
+    const admin = await User.create(adminData);
+
+    res.status(201).json({
+      success: true,
+      message: 'Bootstrap admin created successfully',
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
