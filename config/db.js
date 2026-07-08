@@ -6,13 +6,17 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const getMongoUri = () => {
-  return (
+  const uri =
     process.env.MONGODB_URI ||
     process.env.MONGO_URI ||
     process.env.MONGODB_URL ||
-    process.env.MONGO_URL ||
-    'mongodb://127.0.0.1:27017/travelhub'
-  );
+    process.env.MONGO_URL;
+
+  if (process.env.NODE_ENV === 'production') {
+    return uri;
+  }
+
+  return uri || 'mongodb://127.0.0.1:27017/travelhub';
 };
 
 const connectDB = async () => {
