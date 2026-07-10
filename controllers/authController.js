@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import { generateToken, generateOTP } from '../utils/generateToken.js';
+import { OAuth2Client } from 'google-auth-library';
 import { sendOTPEmail } from '../services/emailService.js';
 
 export const register = async (req, res, next) => {
@@ -82,6 +83,33 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Please provide your current password and a new password (min 6 chars).' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const bootstrapAdmin = async (req, res, next) => {
   console.log("BOOTSTRAP_ADMIN_SECRET:", process.env.BOOTSTRAP_ADMIN_SECRET);
 
@@ -112,7 +140,7 @@ export const bootstrapAdmin = async (req, res, next) => {
     const adminData = {
       name: name || process.env.BOOTSTRAP_ADMIN_NAME || 'Admin User',
       email: email || process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@travelhub.com',
-      password: password || process.env.BOOTSTRAP_ADMIN_PASSWORD || 'admin123',
+      password: password || process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Admin@2374',
       phone: phone || process.env.BOOTSTRAP_ADMIN_PHONE || '+10000000000',
       role: 'admin',
       isVerified: true,
@@ -196,6 +224,58 @@ export const verifyOTP = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googleAuth = async (req, res, next) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) return res.status(400).json({ success: false, message: 'Missing idToken' });
+
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+    const { sub, email, email_verified, name, picture } = payload || {};
+
+    if (!email || !email_verified) {
+      return res.status(400).json({ success: false, message: 'Google account email not verified' });
+    }
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      const randomPassword = Math.random().toString(36).slice(-10);
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        password: randomPassword,
+        avatar: picture || '',
+        isVerified: true,
+        googleId: sub || '',
+      });
+    } else {
+      let changed = false;
+      if (!user.googleId && sub) { user.googleId = sub; changed = true; }
+      if (!user.avatar && picture) { user.avatar = picture; changed = true; }
+      if (!user.isVerified && email_verified) { user.isVerified = true; changed = true; }
+      if (changed) await user.save();
+    }
+
+    if (!user.isActive) return res.status(403).json({ success: false, message: 'Account deactivated' });
+
+    const token = generateToken(user._id);
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
       },
     });
   } catch (error) {
@@ -325,7 +405,7 @@ export const getUserById = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, password } = req.body;
     if (email) {
       const existing = await User.findOne({ email, _id: { $ne: req.params.id } });
       if (existing) {
@@ -339,14 +419,21 @@ export const updateUser = async (req, res, next) => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     });
 
-    const user = await User.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true,
-    }).select('-password');
-
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    res.json({ success: true, user });
+    Object.assign(user, updates);
+
+    if (password !== undefined) {
+      if (String(password).length < 6) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+      }
+      user.password = password;
+    }
+
+    await user.save();
+
+    res.json({ success: true, user: await User.findById(user._id).select('-password') });
   } catch (error) {
     next(error);
   }

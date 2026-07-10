@@ -1,5 +1,5 @@
 import express from 'express';
-import { bootstrapAdmin, register, login, sendOTP, verifyOTP, getMe, updateProfile, getAllUsers, getUserById, createUser, updateUser, deleteUser, updateUserStatus, approvePartner } from '../controllers/authController.js';
+import { bootstrapAdmin, register, login, sendOTP, verifyOTP, getMe, updateProfile, getAllUsers, getUserById, createUser, updateUser, deleteUser, updateUserStatus, approvePartner, googleAuth, changePassword } from '../controllers/authController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -9,8 +9,10 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/otp/send', sendOTP);
 router.post('/otp/verify', verifyOTP);
+router.post('/google', googleAuth);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+router.put('/password', protect, changePassword);
 
 router.post('/users', protect, authorize('admin'), createUser);
 router.get('/users', protect, authorize('admin'), getAllUsers);

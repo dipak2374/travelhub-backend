@@ -2,6 +2,9 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
@@ -72,6 +75,15 @@ export const createApp = () => {
       callback(null, isAllowedOrigin(origin));
     },
     credentials: true,
+  }));
+  // Security middlewares
+  app.use(helmet());
+  app.use(mongoSanitize());
+  app.use(rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // limit each IP to 200 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
   }));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
