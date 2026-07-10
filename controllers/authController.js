@@ -111,8 +111,6 @@ export const changePassword = async (req, res, next) => {
 };
 
 export const bootstrapAdmin = async (req, res, next) => {
-  console.log("BOOTSTRAP_ADMIN_SECRET:", process.env.BOOTSTRAP_ADMIN_SECRET);
-
   try {
     const { secret, email, password, name, phone } = req.body;
     const bootstrapSecret = process.env.BOOTSTRAP_ADMIN_SECRET || process.env.ADMIN_BOOTSTRAP_SECRET;

@@ -9,6 +9,7 @@ import Bus from './models/Bus.js';
 import Car from './models/Car.js';
 import Tour from './models/Tour.js';
 import { createApp } from './app.js';
+import User from './models/User.js';
 
 const { server, io } = createApp();
 const PORT = Number(process.env.PORT) || 5000;
@@ -19,6 +20,30 @@ const startServer = async () => {
   configureEmail();
 
   try {
+    const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@travelhub.com';
+    const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Admin@2374';
+    const existingAdmin = await User.findOne({ role: 'admin' });
+    if (!existingAdmin) {
+      await User.create({
+        name: process.env.BOOTSTRAP_ADMIN_NAME || 'Admin User',
+        email: adminEmail,
+        password: adminPassword,
+        phone: process.env.BOOTSTRAP_ADMIN_PHONE || '+10000000000',
+        role: 'admin',
+        isVerified: true,
+        isActive: true,
+      });
+      console.log('Created bootstrap admin user');
+    } else {
+      existingAdmin.email = adminEmail;
+      existingAdmin.password = adminPassword;
+      existingAdmin.isVerified = true;
+      existingAdmin.isActive = true;
+      existingAdmin.role = 'admin';
+      await existingAdmin.save();
+      console.log('Ensured bootstrap admin user exists');
+    }
+
     await Promise.all([
       Hotel.updateMany({ isApproved: { $ne: true } }, { isApproved: true }),
       Flight.updateMany({ isApproved: { $ne: true } }, { isApproved: true }),
