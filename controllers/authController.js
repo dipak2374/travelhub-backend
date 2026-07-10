@@ -234,8 +234,13 @@ export const googleAuth = async (req, res, next) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ success: false, message: 'Missing idToken' });
 
-    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    if (!googleClientId || googleClientId.includes('your_google')) {
+      return res.status(500).json({ success: false, message: 'Google OAuth is not configured on the server.' });
+    }
+
+    const client = new OAuth2Client(googleClientId);
+    const ticket = await client.verifyIdToken({ idToken, audience: googleClientId });
     const payload = ticket.getPayload();
     const { sub, email, email_verified, name, picture } = payload || {};
 
