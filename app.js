@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
 import mongoose from 'mongoose';
 import express from 'express';
 import cors from 'cors';
@@ -25,12 +26,17 @@ import couponRoutes from './routes/couponRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
-}
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  const rootEnvPath = path.join(__dirname, '../.env');
+  if (fs.existsSync(rootEnvPath)) {
+    dotenv.config({ path: rootEnvPath });
+  }
+}
 
 const getAllowedOrigins = () => {
   const configuredOrigins = [process.env.CLIENT_URL]

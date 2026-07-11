@@ -234,8 +234,11 @@ export const googleAuth = async (req, res, next) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ success: false, message: 'Missing idToken' });
 
-    const googleClientId = process.env.GOOGLE_CLIENT_ID;
-    if (!googleClientId || googleClientId.includes('your_google')) {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+    const googleClientIdSource = process.env.GOOGLE_CLIENT_ID ? 'GOOGLE_CLIENT_ID' : process.env.VITE_GOOGLE_CLIENT_ID ? 'VITE_GOOGLE_CLIENT_ID' : 'none';
+    console.log(`googleAuth: GOOGLE_CLIENT_ID source=${googleClientIdSource} value=${googleClientId ? '(set)' : '(missing)'}`);
+    const isPlaceholder = !googleClientId || /your_google|your_google_client_id|your_google_client_id_here/i.test(googleClientId);
+    if (isPlaceholder) {
       return res.status(500).json({ success: false, message: 'Google OAuth is not configured on the server.' });
     }
 
